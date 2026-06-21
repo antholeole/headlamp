@@ -39,7 +39,6 @@ const defaultOauthPopupProps = {
 const OauthPopup: React.FC<OauthPopupProps> = props => {
   const externalWindowRef = React.useRef<Window | null>(null);
   const storageListenerRef = React.useRef<(() => void) | null>(null);
-  const beforeUnloadListenerRef = React.useRef<(() => void) | null>(null);
 
   const cleanupPopup = React.useCallback(
     (closeWindow = false) => {
@@ -48,15 +47,6 @@ const OauthPopup: React.FC<OauthPopupProps> = props => {
       if (storageListenerRef.current) {
         window.removeEventListener('storage', storageListenerRef.current);
         storageListenerRef.current = null;
-      }
-
-      if (popupWindow && beforeUnloadListenerRef.current) {
-        try {
-          popupWindow.removeEventListener('beforeunload', beforeUnloadListenerRef.current);
-        } catch (e) {
-          console.error('Error occurred while removing beforeunload event listener', e);
-        }
-        beforeUnloadListenerRef.current = null;
       }
 
       if (closeWindow && popupWindow) {
@@ -104,23 +94,6 @@ const OauthPopup: React.FC<OauthPopupProps> = props => {
 
     storageListenerRef.current = storageListener;
     window.addEventListener('storage', storageListener);
-
-    if (externalWindowRef.current) {
-      try {
-        const beforeUnloadListener = () => {
-          cleanupPopup();
-          externalWindowRef.current = null;
-          if (!!props.onClose) {
-            props.onClose();
-          }
-        };
-
-        externalWindowRef.current.addEventListener('beforeunload', beforeUnloadListener, false);
-        beforeUnloadListenerRef.current = beforeUnloadListener;
-      } catch (e) {
-        console.error('Error occurred while adding beforeunload event listener');
-      }
-    }
   };
 
   return <props.button onClick={createPopup}>{props.children}</props.button>;
